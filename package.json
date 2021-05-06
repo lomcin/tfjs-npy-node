@@ -9,6 +9,15 @@
     "type": "git",
     "url": "git+https://github.com/propelml/tfjs-npy.git"
   },
+  "keywords": [
+    "tensorflow",
+    "tfjs",
+    "tensorflow.js",
+    "tensor",
+    "numpy",
+    "npy",
+    "npz"
+  ],
   "scripts": {
     "build": "tsc",
     "fmt": "prettier --trailing-comma all --write *.ts",
