@@ -148,6 +148,12 @@ export function parse(ab: ArrayBuffer): tf.Tensor {
     const s = ab.slice(pos, pos + size * 8);
     const ta = new Int32Array(s).filter((val, i) => i % 2 === 0);
     return tf.tensor(ta, header.shape, "int32");
+  } else if (header["descr"] === "<i4") {
+    // 4 byte int. int32.
+    assertEqual(bytesLeft, size * 4);
+    const s = ab.slice(pos, pos + size * 4);
+    const ta = new Int32Array(s);
+    return tf.tensor(ta, header.shape, "int32");
   } else if (header["descr"] === "|u1") {
     // uint8.
     assertEqual(bytesLeft, size);
