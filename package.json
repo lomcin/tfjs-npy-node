@@ -21,10 +21,9 @@
   "scripts": {
     "build": "tsc",
     "fmt": "prettier --trailing-comma all --write *.ts",
-    "lint": "tslint --project tsconfig.json",
     "test": "npm-run-all -p test:*",
     "test:unit": "mocha",
-    "test:lint": "tslint --project tsconfig.json --test",
+    "test:lint": "tslint --project tsconfig.json",
     "test:fmt": "prettier --trailing-comma all --check *.ts",
     "test:pkg": "pkg-ok"
   },
