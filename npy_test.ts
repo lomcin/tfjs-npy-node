@@ -11,53 +11,74 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { test, assertEqual } from "liltest";
+import { assert } from "chai";
 import * as tf from "@tensorflow/tfjs-node";
 import * as npy from "./npy";
 import { readFileSync } from "fs";
 const { expectArraysClose } = tf.test_util;
 
-async function load(fn: string): Promise<tf.Tensor> {
-  const b = readFileSync(__dirname + "/testdata/" + fn, null);
-  const ab = bufferToArrayBuffer(b);
-  return await npy.parse(ab);
-}
-
 function bufferToArrayBuffer(b: Buffer): ArrayBuffer {
   return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
 }
 
-test(async function npy_parse() {
-  let t = await load("1.npy");
-  assertEqual(t.dataSync(), [1.5, 2.5]);
-  assertEqual(t.shape, [2]);
-  assertEqual(t.dtype, "float32");
+describe("parse", () => {
+  async function load(fn: string): Promise<tf.Tensor> {
+    const b = readFileSync(__dirname + "/testdata/" + fn, null);
+    const ab = bufferToArrayBuffer(b);
+    return await npy.parse(ab);
+  }
 
-  t = await load("2.npy");
-  assertEqual(t.dataSync(), [1.5, 43, 13, 2.5]);
-  assertEqual(t.shape, [2, 2]);
-  assertEqual(t.dtype, "float32");
+  it("parses 1.npy correctly", async () => {
+    const t = await load("1.npy");
+    assert.deepStrictEqual(await t.array(), [1.5, 2.5]);
+    assert.deepStrictEqual(t.shape, [2]);
+    assert.strictEqual(t.dtype, "float32");
+  });
 
-  t = await load("3.npy");
-  assertEqual(t.dataSync(), [1, 2, 3, 4, 5, 6]);
-  assertEqual(t.shape, [1, 2, 3]);
-  assertEqual(t.dtype, "int32");
+  it("parses 2.npy correctly", async () => {
+    const t = await load("2.npy");
+    assert.deepStrictEqual(await t.array(), [
+      [1.5, 43],
+      [13, 2.5],
+    ]);
+    assert.deepStrictEqual(t.shape, [2, 2]);
+    assert.strictEqual(t.dtype, "float32");
+  });
 
-  t = await load("4.npy");
-  expectArraysClose(t.dataSync(), new Float32Array([0.1, 0.2]));
-  assertEqual(t.shape, [2]);
-  assertEqual(t.dtype, "float32");
+  it("parses 3.npy correctly", async () => {
+    const t = await load("3.npy");
+    assert.deepStrictEqual(await t.array(), [
+      [
+        [1, 2, 3],
+        [4, 5, 6],
+      ],
+    ]);
+    assert.deepStrictEqual(t.shape, [1, 2, 3]);
+    assert.strictEqual(t.dtype, "int32");
+  });
 
-  t = await load("uint8.npy");
-  expectArraysClose(t.dataSync(), new Int32Array([0, 127]));
-  assertEqual(t.shape, [2]);
-  assertEqual(t.dtype, "int32"); // TODO uint8
+  it("parses 4.npy correctly", async () => {
+    const t = await load("4.npy");
+    expectArraysClose(t.dataSync(), new Float32Array([0.1, 0.2]));
+    assert.deepStrictEqual(t.shape, [2]);
+    assert.strictEqual(t.dtype, "float32");
+  });
+
+  it("parses uint8.npy correctly", async () => {
+    const t = await load("uint8.npy");
+    expectArraysClose(t.dataSync(), new Int32Array([0, 127]));
+    assert.deepStrictEqual(t.shape, [2]);
+    assert.strictEqual(t.dtype, "int32"); // TODO uint8
+  });
 });
 
-test(async function npy_serialize() {
-  const t = tf.tensor([1.5, 2.5]);
-  const ab = await npy.serialize(t);
-  // Now try to parse it.
-  const tt = npy.parse(ab);
-  expectArraysClose(t.dataSync(), tt.dataSync());
+describe("serialize", () => {
+  it("serializes to a parseable representation", async () => {
+    const t = tf.tensor([1.5, 2.5]);
+    const ab = await npy.serialize(t);
+    // Now try to parse it.
+    const tt = npy.parse(ab);
+    const [actual, expected] = await Promise.all([t.data(), tt.data()]);
+    expectArraysClose(actual, expected);
+  });
 });

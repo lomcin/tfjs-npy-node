@@ -1,0 +1,5 @@
+{
+  "require": ["dotenv/config", "ts-node/register"],
+  "spec": "npy_test.ts",
+  "watch-files": ["*.ts"]
+}
