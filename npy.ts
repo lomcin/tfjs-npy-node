@@ -183,11 +183,11 @@ function writeStrToDataView(view: DataView, str: string, pos: number) {
 function assertEqual(actual: number, expected: number) {
   assert(
     actual === expected,
-    `actual ${actual} not equal to expected ${expected}`
+    `actual ${actual} not equal to expected ${expected}`,
   );
 }
 
-function assert(cond: boolean, msg?: string) {
+function assert(cond: boolean, msg?: string): asserts cond {
   if (!cond) {
     throw Error(msg || "assert failed");
   }
