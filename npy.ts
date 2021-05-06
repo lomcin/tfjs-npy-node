@@ -27,28 +27,84 @@ export function serializeSync(tensor: tf.Tensor): ArrayBuffer {
   return doSerialize(tensor, tensor.dataSync());
 }
 
-function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
-  const descr = new Map([
-    ["float32", "<f4"],
-    ["int32", "<i4"],
-  ]).get(tensor.dtype);
+const MAGIC_STRING: string = "\x93NUMPY" as const;
 
-  // First figure out how long the file is going to be so we can create the
+interface DescrInfo {
+  bytes: number;
+  dtype: tf.DataType;
+  /** Function for creating a typed array. */
+  createArray: (buf: ArrayBuffer) => tf.TypedArray;
+  /** Function for writing into a view. Undefined if serialization is not supported. */
+  write?: (view: DataView, pos: number, byte: number) => void;
+}
+
+type SupportedDescr = "<f8" | "<f4" | "<i8" | "<i4" | "|u1" | "|b1";
+
+const numpyDescrInfo: Readonly<Record<SupportedDescr, DescrInfo>> = {
+  "<f8": {
+    bytes: 8,
+    dtype: "float32", // downcast to float32
+    createArray: (buf) => new Float32Array(new Float64Array(buf)),
+  },
+  "<f4": {
+    bytes: 4,
+    dtype: "float32",
+    createArray: (buf) => new Float32Array(buf),
+    write: (view, pos, byte) => view.setFloat32(pos, byte, true),
+  },
+  "<i8": {
+    bytes: 8,
+    dtype: "int32", // downcast to int32
+    createArray: (buf) => new Int32Array(buf).filter((val, i) => i % 2 === 0),
+  },
+  "<i4": {
+    bytes: 4,
+    dtype: "int32",
+    createArray: (buf) => new Int32Array(buf),
+    write: (view, pos, byte) => view.setInt32(pos, byte, true),
+  },
+  "|b1": {
+    bytes: 1,
+    dtype: "bool",
+    createArray: (buf) => new Uint8Array(buf),
+    write: (view, pos, byte) => view.setUint8(pos, byte),
+  },
+  "|u1": {
+    bytes: 1,
+    dtype: "int32", // FIXME: should be uint8
+    createArray: (buf) => new Uint8Array(buf),
+    write: (view, pos, byte) => view.setUint8(pos, byte),
+  },
+};
+
+const tfDtypeToNumpyDescr: ReadonlyMap<tf.DataType, SupportedDescr> = new Map([
+  ["float32", "<f4"],
+  ["int32", "<i4"],
+  ["bool", "|b1"],
+]);
+
+function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
+  // Generate header
+  const descr = tfDtypeToNumpyDescr.get(tensor.dtype);
+  assert(
+    descr !== undefined,
+    `Tensors of dtype '${tensor.dtype}' not supported yet.`,
+  );
+  const versionStr = "\x01\x00"; // version 1.0
+  const shapeStr = tensor.shape.join(",") + ",";
+  let header = `{'descr': '${descr}', 'fortran_order': False, 'shape': (${shapeStr}), }`;
+
+  // Figure out how long the file is going to be so we can create the
   // output ArrayBuffer.
-  const magicStr = "NUMPY";
-  const versionStr = "\x01\x00";
-  const shapeStr = String(tensor.shape.join(",")) + ",";
-  const [d, fo, s] = [descr, "False", shapeStr];
-  let header = `{'descr': '${d}', 'fortran_order': ${fo}, 'shape': (${s}), }`;
   const unpaddedLength =
-    1 + magicStr.length + versionStr.length + 2 + header.length;
+    MAGIC_STRING.length + versionStr.length + 2 + header.length;
   // Spaces to 16-bit align.
   const padding = " ".repeat((16 - (unpaddedLength % 16)) % 16);
   header += padding;
   assertEqual((unpaddedLength + padding.length) % 16, 0);
-  // Either int32 or float32 for now Both 4 bytes per element.
-  // TODO support uint8 and bool.
-  const bytesPerElement = 4;
+  // Number of bytes is in the Numpy descr
+  const bytesPerElement = Number.parseInt(descr[2]);
+  assert(new Set([1, 2, 4, 8]).has(bytesPerElement));
   const dataLen = bytesPerElement * numEls(tensor.shape);
   const totalSize = unpaddedLength + padding.length + dataLen;
 
@@ -57,8 +113,7 @@ function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
   let pos = 0;
 
   // Write magic string and version.
-  view.setUint8(pos++, 0x93);
-  pos = writeStrToDataView(view, magicStr + versionStr, pos);
+  pos = writeStrToDataView(view, MAGIC_STRING + versionStr, pos);
 
   // Write header length and header.
   view.setUint16(pos, header.length, true);
@@ -66,44 +121,32 @@ function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
   pos = writeStrToDataView(view, header, pos);
 
   // Write data
-  assertEqual(data.length, numEls(tensor.shape));
+  const write = numpyDescrInfo[descr].write;
+  assert(write !== undefined, `dtype ${tensor.dtype} not yet supported.`);
   for (let i = 0; i < data.length; i++) {
-    switch (tensor.dtype) {
-      case "float32":
-        view.setFloat32(pos, data[i], true);
-        pos += 4;
-        break;
-
-      case "int32":
-        view.setInt32(pos, data[i], true);
-        pos += 4;
-        break;
-
-      default:
-        throw Error(`dtype ${tensor.dtype} not yet supported.`);
-    }
+    write(view, pos, data[i]);
+    pos += bytesPerElement;
   }
   return ab;
 }
 
 /** Parses an ArrayBuffer containing a npy file. Returns a tensor. */
 export function parse(ab: ArrayBuffer): tf.Tensor {
-  assert(ab.byteLength > 5);
+  assert(ab.byteLength > MAGIC_STRING.length);
   const view = new DataView(ab);
   let pos = 0;
 
   // First parse the magic string.
-  const byte0 = view.getUint8(pos++);
-  const magicStr = dataViewToAscii(new DataView(ab, pos, 5));
-  pos += 5;
-  if (byte0 !== 0x93 || magicStr !== "NUMPY") {
+  const magicStr = dataViewToAscii(new DataView(ab, pos, MAGIC_STRING.length));
+  if (magicStr !== MAGIC_STRING) {
     throw Error("Not a numpy file.");
   }
+  pos += MAGIC_STRING.length;
 
   // Parse the version
   const version = [view.getUint8(pos++), view.getUint8(pos++)].join(".");
   if (version !== "1.0") {
-    throw Error("Unsupported version.");
+    throw Error(`Unsupported npy version ${version}.`);
   }
 
   // Parse the header length.
@@ -111,8 +154,8 @@ export function parse(ab: ArrayBuffer): tf.Tensor {
   pos += 2;
 
   // Parse the header.
-  // header is almost json, so we just manipulated it until it is.
-  //  {'descr': '<f8', 'fortran_order': False, 'shape': (1, 2), }
+  // Header is almost json, so we just manipulated it until it is.
+  // Example: {'descr': '<f8', 'fortran_order': False, 'shape': (1, 2), }
   const headerPy = dataViewToAscii(new DataView(ab, pos, headerLen));
   pos += headerLen;
   const bytesLeft = view.byteLength - pos;
@@ -128,49 +171,33 @@ export function parse(ab: ArrayBuffer): tf.Tensor {
     throw Error("NPY parse error. Implement me.");
   }
 
+  // Parse shape
+  const shape = header.shape;
+  assert(Array.isArray(shape));
+  assert(shape.every((el) => typeof el === "number"));
+  const size = numEls(shape);
+
+  // Parse descr
+  const descr = header.descr;
+  assert(typeof descr === "string");
+  const info = numpyDescrInfo[descr as SupportedDescr];
+  assert(info !== undefined, `Unknown dtype "${descr}". Implement me.`);
+  const bytesPerElement = info.bytes;
+  assert(
+    bytesLeft === size * bytesPerElement,
+    `Expected there to be ${
+      size * bytesPerElement
+    } bytes left for npy file of dtype descr ${descr}, but there were ${bytesLeft} bytes left`,
+  );
+
   // Finally parse the actual data.
-  const size = numEls(header.shape);
-  if (header["descr"] === "<f8") {
-    // 8 byte float. float64.
-    assertEqual(bytesLeft, size * 8);
-    const s = ab.slice(pos, pos + size * 8);
-    const ta = new Float32Array(new Float64Array(s));
-    return tf.tensor(ta, header.shape, "float32");
-  } else if (header["descr"] === "<f4") {
-    // 4 byte float. float32.
-    assertEqual(bytesLeft, size * 4);
-    const s = ab.slice(pos, pos + size * 4);
-    const ta = new Float32Array(s);
-    return tf.tensor(ta, header.shape, "float32");
-  } else if (header["descr"] === "<i8") {
-    // 8 byte int. int64.
-    assertEqual(bytesLeft, size * 8);
-    const s = ab.slice(pos, pos + size * 8);
-    const ta = new Int32Array(s).filter((val, i) => i % 2 === 0);
-    return tf.tensor(ta, header.shape, "int32");
-  } else if (header["descr"] === "<i4") {
-    // 4 byte int. int32.
-    assertEqual(bytesLeft, size * 4);
-    const s = ab.slice(pos, pos + size * 4);
-    const ta = new Int32Array(s);
-    return tf.tensor(ta, header.shape, "int32");
-  } else if (header["descr"] === "|u1") {
-    // uint8.
-    assertEqual(bytesLeft, size);
-    const s = ab.slice(pos, pos + size);
-    const ta = new Uint8Array(s);
-    return tf.tensor(ta, header.shape, "int32"); // FIXME should be "uint8"
-  } else {
-    throw Error(`Unknown dtype "${header["descr"]}". Implement me.`);
-  }
+  const slice = ab.slice(pos, pos + size * bytesPerElement);
+  const typedArray = info.createArray(slice);
+  return tf.tensor(typedArray, shape, info.dtype);
 }
 
 function numEls(shape: number[]): number {
-  if (shape.length === 0) {
-    return 1;
-  } else {
-    return shape.reduce((a: number, b: number) => a * b);
-  }
+  return shape.reduce((a: number, b: number) => a * b, 1);
 }
 
 function writeStrToDataView(view: DataView, str: string, pos: number) {
