@@ -15,9 +15,19 @@ limitations under the License.
 // https://docs.scipy.org/doc/numpy/neps/npy-format.html
 
 import * as tf from "@tensorflow/tfjs-core";
+import type { TypedArray } from "@tensorflow/tfjs-core";
 
 /** Serializes a tensor into a npy file contents. */
 export async function serialize(tensor: tf.Tensor): Promise<ArrayBuffer> {
+  return doSerialize(tensor, await tensor.data());
+}
+
+/** Serializes a tensor into npy file contents synchronously. */
+export function serializeSync(tensor: tf.Tensor): ArrayBuffer {
+  return doSerialize(tensor, tensor.dataSync());
+}
+
+function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
   const descr = new Map([
     ["float32", "<f4"],
     ["int32", "<i4"],
@@ -56,7 +66,6 @@ export async function serialize(tensor: tf.Tensor): Promise<ArrayBuffer> {
   pos = writeStrToDataView(view, header, pos);
 
   // Write data
-  const data = await tensor.data();
   assertEqual(data.length, numEls(tensor.shape));
   for (let i = 0; i < data.length; i++) {
     switch (tensor.dtype) {
@@ -168,7 +177,7 @@ function writeStrToDataView(view: DataView, str: string, pos: number) {
 function assertEqual(actual: number, expected: number) {
   assert(
     actual === expected,
-    `actual ${actual} not equal to expected ${expected}`,
+    `actual ${actual} not equal to expected ${expected}`
   );
 }
 
