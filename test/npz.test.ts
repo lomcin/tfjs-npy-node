@@ -1,14 +1,14 @@
 import { assert } from "chai";
 import * as tf from "@tensorflow/tfjs-node";
-import * as npy from "../src";
+import { npz } from "../src";
 import { readFileSync } from "fs";
 import { bufferToArrayBuffer } from "../src/utils";
 
-describe("parzeNpz", () => {
+describe("npz.parse", () => {
   async function loadz(fn: string): Promise<tf.Tensor[]> {
     const b = readFileSync(__dirname + "/data/" + fn, null);
     const ab = bufferToArrayBuffer(b);
-    return npy.parseNpz(ab);
+    return npz.parse(ab);
   }
 
   it("parses 1.npz correctly", async () => {
@@ -21,11 +21,11 @@ describe("parzeNpz", () => {
   });
 });
 
-describe("serializeNpz", () => {
+describe("npz.serialize", () => {
   it("serializes to a parseable representation", async () => {
     const tensors = [tf.tensor([1.5, 2.5]), tf.tensor([3.5, 4.5])];
-    const ab = await npy.serializeNpz(tensors);
-    const tt = npy.parseNpz(ab);
+    const ab = await npz.serialize(tensors);
+    const tt = npz.parse(ab);
     assert.strictEqual(tt.length, 2);
     assert.deepStrictEqual(tt[0].arraySync(), tensors[0].arraySync());
     assert.deepStrictEqual(tt[1].arraySync(), tensors[1].arraySync());

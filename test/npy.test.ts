@@ -13,7 +13,7 @@ limitations under the License.
 
 import { assert } from "chai";
 import * as tf from "@tensorflow/tfjs-node";
-import * as npy from "../src";
+import { npy } from "../src";
 import { readFileSync } from "fs";
 import { bufferToArrayBuffer } from "../src/utils";
 const { expectArraysClose } = tf.test_util;

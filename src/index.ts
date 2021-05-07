@@ -1,2 +1,2 @@
-export * from "./npy";
-export * from "./npz";
+export * as npy from "./npy";
+export * as npz from "./npz";
