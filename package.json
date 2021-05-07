@@ -1,8 +1,11 @@
 {
-  "name": "tfjs-npy",
+  "name": "@maximekjaer/tfjs-npy",
   "version": "0.0.3",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "/dist",
     "!/dist/test",
