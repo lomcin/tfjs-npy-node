@@ -8,8 +8,8 @@
   },
   "files": [
     "/dist",
+    "/src/**/*.ts",
     "!/dist/test",
-    "!/dist/**/*.js.map",
     "!/dist/**/*.tsbuildinfo"
   ],
   "license": "Apache-2.0",
