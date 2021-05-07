@@ -20,5 +20,5 @@
     // See https://www.tensorflow.org/js/tutorials/setup#typescript
     "skipLibCheck": true
   },
-  "include": ["*.ts"]
+  "include": ["src/**/*.ts", "test/**/*.ts"]
 }

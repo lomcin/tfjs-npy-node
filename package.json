@@ -1,8 +1,14 @@
 {
   "name": "tfjs-npy",
   "version": "0.0.3",
-  "main": "dist/npy.js",
-  "types": "dist/npy.d.ts",
+  "main": "dist/src/npy.js",
+  "types": "dist/src/npy.d.ts",
+  "files": [
+    "/dist",
+    "!/dist/test",
+    "!/dist/**/*.js.map",
+    "!/dist/**/*.tsbuildinfo"
+  ],
   "license": "Apache-2.0",
   "private": false,
   "repository": {
@@ -20,11 +26,11 @@
   ],
   "scripts": {
     "build": "tsc",
-    "fmt": "prettier --trailing-comma all --write *.ts",
+    "fmt": "prettier --write .",
     "test": "npm-run-all -p test:*",
     "test:unit": "mocha",
     "test:lint": "tslint --project tsconfig.json",
-    "test:fmt": "prettier --trailing-comma all --check *.ts",
+    "test:fmt": "prettier --check .",
     "test:pkg": "pkg-ok"
   },
   "dependencies": {
