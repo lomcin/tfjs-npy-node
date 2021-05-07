@@ -18,34 +18,6 @@ import * as tf from "@tensorflow/tfjs-core";
 import type { TypedArray } from "@tensorflow/tfjs-core";
 import * as AdmZip from "adm-zip";
 
-/** Serializes a tensor into a npy file contents. */
-export async function serialize(tensor: tf.Tensor): Promise<ArrayBuffer> {
-  return doSerialize(tensor, await tensor.data());
-}
-
-/** Serializes a tensor into npy file contents synchronously. */
-export function serializeSync(tensor: tf.Tensor): ArrayBuffer {
-  return doSerialize(tensor, tensor.dataSync());
-}
-
-export async function serializeNpz(tensors: tf.Tensor[]): Promise<ArrayBuffer> {
-  const zip = new AdmZip();
-  for (let i = 0; i < tensors.length; ++i) {
-    const buffer = await serialize(tensors[i]);
-    zip.addFile(`arr_${i}`, Buffer.from(buffer));
-  }
-  return zip.toBuffer().buffer;
-}
-
-export function serializeNpzSync(tensors: tf.Tensor[]): ArrayBuffer {
-  const zip = new AdmZip();
-  for (let i = 0; i < tensors.length; ++i) {
-    const buffer = serializeSync(tensors[i]);
-    zip.addFile(`arr_${i}`, Buffer.from(buffer));
-  }
-  return zip.toBuffer().buffer;
-}
-
 const MAGIC_STRING: string = "\x93NUMPY" as const;
 
 interface DescrInfo {
@@ -101,6 +73,36 @@ const tfDtypeToNumpyDescr: ReadonlyMap<tf.DataType, SupportedDescr> = new Map([
   ["int32", "<i4"],
   ["bool", "|b1"],
 ]);
+
+/** Serializes a tensor into a npy file contents. */
+export async function serialize(tensor: tf.Tensor): Promise<ArrayBuffer> {
+  return doSerialize(tensor, await tensor.data());
+}
+
+/** Serializes a tensor into npy file contents synchronously. */
+export function serializeSync(tensor: tf.Tensor): ArrayBuffer {
+  return doSerialize(tensor, tensor.dataSync());
+}
+
+/** Serializes multiple tensors into npz file contents. */
+export async function serializeNpz(tensors: tf.Tensor[]): Promise<ArrayBuffer> {
+  const zip = new AdmZip();
+  for (let i = 0; i < tensors.length; ++i) {
+    const buffer = await serialize(tensors[i]);
+    zip.addFile(`arr_${i}`, Buffer.from(buffer));
+  }
+  return zip.toBuffer().buffer;
+}
+
+/** Serializes multiple tensors into npz file contents, synchronously. */
+export function serializeNpzSync(tensors: tf.Tensor[]): ArrayBuffer {
+  const zip = new AdmZip();
+  for (let i = 0; i < tensors.length; ++i) {
+    const buffer = serializeSync(tensors[i]);
+    zip.addFile(`arr_${i}`, Buffer.from(buffer));
+  }
+  return zip.toBuffer().buffer;
+}
 
 function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
   // Generate header
