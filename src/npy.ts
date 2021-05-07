@@ -150,9 +150,16 @@ function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
 
 /** Load a .npy file from disk. */
 export async function load(filepath: string): Promise<tf.Tensor> {
-  assert(filepath.endsWith(".npy"));
+  assert(
+    filepath.endsWith(".npy"),
+    `Expected provided filepath (${filepath}) to have file extension .npy`,
+  );
   const contents = await fs.promises.readFile(filepath);
-  return parse(contents.buffer);
+  try {
+    return parse(contents.buffer);
+  } catch (err) {
+    throw new Error(`Could not load ${filepath}: ` + (err as Error).message);
+  }
 }
 
 /** Parses an ArrayBuffer containing a npy file. Returns a tensor. */

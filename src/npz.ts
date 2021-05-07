@@ -37,8 +37,15 @@ function doSerialize(tensors: tf.Tensor[]): AdmZip {
 
 /** Load a .npz file from disk. */
 export function load(filepath: string): tf.Tensor[] {
-  assert(filepath.endsWith(".npz"));
-  return doParse(filepath);
+  assert(
+    filepath.endsWith(".npz"),
+    `Expected provided filepath (${filepath}) to have file extension .npz`,
+  );
+  try {
+    return doParse(filepath);
+  } catch (err) {
+    throw new Error(`Could not load ${filepath}: ` + (err as Error).message);
+  }
 }
 
 /** Parse the contents of an npz file. */
