@@ -16,6 +16,7 @@ limitations under the License.
 
 import * as tf from "@tensorflow/tfjs-core";
 import type { TypedArray } from "@tensorflow/tfjs-core";
+import * as AdmZip from "adm-zip";
 
 /** Serializes a tensor into a npy file contents. */
 export async function serialize(tensor: tf.Tensor): Promise<ArrayBuffer> {
@@ -25,6 +26,24 @@ export async function serialize(tensor: tf.Tensor): Promise<ArrayBuffer> {
 /** Serializes a tensor into npy file contents synchronously. */
 export function serializeSync(tensor: tf.Tensor): ArrayBuffer {
   return doSerialize(tensor, tensor.dataSync());
+}
+
+export async function serializeNpz(tensors: tf.Tensor[]): Promise<ArrayBuffer> {
+  const zip = new AdmZip();
+  for (let i = 0; i < tensors.length; ++i) {
+    const buffer = await serialize(tensors[i]);
+    zip.addFile(`arr_${i}`, Buffer.from(buffer));
+  }
+  return zip.toBuffer().buffer;
+}
+
+export function serializeNpzSync(tensors: tf.Tensor[]): ArrayBuffer {
+  const zip = new AdmZip();
+  for (let i = 0; i < tensors.length; ++i) {
+    const buffer = serializeSync(tensors[i]);
+    zip.addFile(`arr_${i}`, Buffer.from(buffer));
+  }
+  return zip.toBuffer().buffer;
 }
 
 const MAGIC_STRING: string = "\x93NUMPY" as const;
@@ -130,6 +149,13 @@ function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
   return ab;
 }
 
+export function parseNpz(ab: ArrayBuffer): tf.Tensor[] {
+  const zip = new AdmZip(Buffer.from(ab));
+  return zip
+    .getEntries()
+    .map((entry) => parse(bufferToArrayBuffer(entry.getData())));
+}
+
 /** Parses an ArrayBuffer containing a npy file. Returns a tensor. */
 export function parse(ab: ArrayBuffer): tf.Tensor {
   assert(ab.byteLength > MAGIC_STRING.length);
@@ -194,6 +220,10 @@ export function parse(ab: ArrayBuffer): tf.Tensor {
   const slice = ab.slice(pos, pos + size * bytesPerElement);
   const typedArray = info.createArray(slice);
   return tf.tensor(typedArray, shape, info.dtype);
+}
+
+function bufferToArrayBuffer(b: Buffer): ArrayBuffer {
+  return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
 }
 
 function numEls(shape: number[]): number {
