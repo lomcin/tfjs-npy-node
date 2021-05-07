@@ -1,7 +1,7 @@
 # NumPy file parsing and serialization for TensorFlow.js
 
 [![test](https://github.com/MaximeKjaer/tfjs-npy-node/actions/workflows/test.yml/badge.svg)](https://github.com/MaximeKjaer/tfjs-npy-node/actions/workflows/test.yml)
-![npm (scoped)](https://img.shields.io/npm/v/@maximekjaer/tfjs-npy-node)
+![npm (scoped)](https://img.shields.io/npm/v/tfjs-npy-node)
 
 This is a fork of [tfjs-npy](https://github.com/propelml/tfjs-npy), which adds:
 
