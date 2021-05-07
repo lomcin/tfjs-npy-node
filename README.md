@@ -65,3 +65,25 @@ await npz.save("file2.npz", tensors2);
 const npzArrayBuffer2: ArrayBuffer = await npz.serialize(tensors1);
 const npzArrayBuffer3: ArrayBuffer = npz.serializeSync(tensors2);
 ```
+
+## Contributing
+
+### Getting started
+
+Clone the repo, install dependencies, and run the tests:
+
+```bash
+$ git clone git@github.com:MaximeKjaer/tfjs-npy-node.git
+$ cd tfjs-npy-node
+$ yarn
+$ yarn build
+$ yarn test
+```
+
+### Releasing a new version
+
+If you have write access to the main branch of the repo, run:
+
+```bash
+$ yarn version
+```
