@@ -27,7 +27,10 @@ interface DescrInfo {
   dtype: tf.DataType;
   /** Function for creating a typed array. */
   createArray: (buf: ArrayBuffer) => tf.TypedArray;
-  /** Function for writing into a view. Undefined if serialization is not supported. */
+  /**
+   * Function for writing into a view. Undefined if serialization is not
+   * supported.
+   */
   write?: (view: DataView, pos: number, byte: number) => void;
 }
 
@@ -144,7 +147,7 @@ function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
   header += padding;
   assertEqual((unpaddedLength + padding.length) % 16, 0);
   // Number of bytes is in the Numpy descr
-  const bytesPerElement = Number.parseInt(descr[2]);
+  const bytesPerElement = Number.parseInt(descr[2], 10);
   assert(new Set([1, 2, 4, 8]).has(bytesPerElement));
   const dataLen = bytesPerElement * numEls(tensor.shape);
   const totalSize = unpaddedLength + padding.length + dataLen;
