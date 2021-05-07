@@ -1,24 +1,5 @@
 {
-  "compilerOptions": {
-    "module": "commonjs",
-    "strict": true,
-    "sourceMap": true,
-    "removeComments": true,
-    "preserveConstEnums": true,
-    "declaration": true,
-    "target": "es5",
-    "lib": ["es2015", "dom"],
-    "outDir": "./dist",
-    "noUnusedLocals": true,
-    "noImplicitReturns": true,
-    "noUnusedParameters": false,
-    "pretty": true,
-    "noFallthroughCasesInSwitch": true,
-    "allowUnreachableCode": false,
-    "experimentalDecorators": true,
-    // Necessary for TensorFlow.js
-    // See https://www.tensorflow.org/js/tutorials/setup#typescript
-    "skipLibCheck": true
-  },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "files": [],
+  "include": [],
+  "references": [{ "path": "./src" }, { "path": "./test" }]
 }

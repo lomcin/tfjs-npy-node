@@ -1,8 +1,8 @@
 {
   "name": "tfjs-npy",
   "version": "0.0.3",
-  "main": "dist/src/npy.js",
-  "types": "dist/src/npy.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "files": [
     "/dist",
     "!/dist/test",
@@ -25,7 +25,7 @@
     "npz"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc --build",
     "fmt": "prettier --write .",
     "test": "npm-run-all -p test:*",
     "test:unit": "mocha",
