@@ -1,5 +1,5 @@
 {
-  "name": "@maximekjaer/tfjs-npy",
+  "name": "tfjs-npy-node",
   "version": "0.1.1",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
@@ -16,7 +16,7 @@
   "private": false,
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/propelml/tfjs-npy.git"
+    "url": "git+https://github.com/MaximeKjaer/tfjs-npy-node/"
   },
   "keywords": [
     "tensorflow",
@@ -25,7 +25,9 @@
     "tensor",
     "numpy",
     "npy",
-    "npz"
+    "npz",
+    "node",
+    "node.js"
   ],
   "scripts": {
     "build": "tsc --build",

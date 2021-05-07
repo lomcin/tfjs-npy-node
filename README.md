@@ -1,7 +1,7 @@
 # NumPy file parsing and serialization for TensorFlow.js
 
-[![test](https://github.com/MaximeKjaer/tfjs-npy/actions/workflows/test.yml/badge.svg)](https://github.com/MaximeKjaer/tfjs-npy/actions/workflows/test.yml)
-![npm (scoped)](https://img.shields.io/npm/v/@maximekjaer/tfjs-npy)
+[![test](https://github.com/MaximeKjaer/tfjs-npy-node/actions/workflows/test.yml/badge.svg)](https://github.com/MaximeKjaer/tfjs-npy-node/actions/workflows/test.yml)
+![npm (scoped)](https://img.shields.io/npm/v/@maximekjaer/tfjs-npy-node)
 
 This is a fork of [tfjs-npy](https://github.com/propelml/tfjs-npy), which adds:
 
@@ -9,15 +9,25 @@ This is a fork of [tfjs-npy](https://github.com/propelml/tfjs-npy), which adds:
 - `.npz` parsing and serialization
 - Loading and saving files from disk
 
-Note that because of support for `.npz` (which uses zlib for zipping), and for loading and saving files, this library is meant to be used in Node.js, not in the browser.
+Note that because of support for `.npz` (which uses zlib for zipping), and for loading and saving files, this library is meant to be used in Node.js, not in the browser. If you want to convert to npy in the browser, consider using the original [tfjs-npy](https://github.com/propelml/tfjs-npy).
 
 See https://docs.scipy.org/doc/numpy/neps/npy-format.html for more information about the file format.
 
-API:
+## Installation
+
+```bash
+# Using npm
+$ npm install tfjs-npy-node
+
+# Using yarn
+$ yarn add tfjs-npy-node
+```
+
+## API
 
 ```ts
 import * as tf from "@tensorflow/tfjs-core";
-import { npy, npz } from "@maximekjaer/tfjs-npy";
+import { npy, npz } from "tfjs-npy-node";
 
 ////////////////
 // .npy files //
