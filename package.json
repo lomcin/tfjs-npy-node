@@ -35,7 +35,9 @@
     "test:lint": "tslint --project tsconfig.json",
     "test:fmt": "prettier --check .",
     "test:pkg": "pkg-ok",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "preversion": "npm-run-all clean build test",
+    "postversion": "git push && git push --tags"
   },
   "dependencies": {
     "@tensorflow/tfjs-core": "^3.0.0",
