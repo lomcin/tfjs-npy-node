@@ -21,8 +21,11 @@ import { assert } from "./utils";
 
 const MAGIC_STRING: string = "\x93NUMPY" as const;
 
+/** Information about how to read and write a Numpy descr */
 interface DescrInfo {
+  /** Number of bytes needed for a single element. */
   bytes: number;
+  /** TensorFlow dtype corresponding to this dtype */
   dtype: tf.DataType;
   /** Function for creating a typed array. */
   createArray: (buf: ArrayBuffer) => tf.TypedArray;
@@ -33,6 +36,9 @@ interface DescrInfo {
   write?: (view: DataView, pos: number, byte: number) => void;
 }
 
+/**
+ * Union type of the Numpy descr that the library currently can read or write.
+ */
 type SupportedDescr = "<f8" | "<f4" | "<i8" | "<i4" | "|u1" | "|b1";
 
 const numpyDescrInfo: Readonly<Record<SupportedDescr, DescrInfo>> = {
