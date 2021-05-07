@@ -31,7 +31,8 @@
     "test:unit": "mocha",
     "test:lint": "tslint --project tsconfig.json",
     "test:fmt": "prettier --check .",
-    "test:pkg": "pkg-ok"
+    "test:pkg": "pkg-ok",
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "@tensorflow/tfjs-core": "^3.0.0",
@@ -50,6 +51,7 @@
     "npm-run-all": "^4.1.5",
     "pkg-ok": "^2.3.1",
     "prettier": "^2.2.1",
+    "rimraf": "^3.0.2",
     "seedrandom": "~2.4.3",
     "ts-node": "^9.1.1",
     "tslint": "^5.9.1",
