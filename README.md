@@ -11,7 +11,7 @@ This is a fork of [tfjs-npy](https://github.com/propelml/tfjs-npy), which adds:
 
 Note that because of support for `.npz` (which uses zlib for zipping), and for loading and saving files, this library is meant to be used in Node.js, not in the browser. If you want to convert to npy in the browser, consider using the original [tfjs-npy](https://github.com/propelml/tfjs-npy).
 
-See https://docs.scipy.org/doc/numpy/neps/npy-format.html for more information about the file format.
+See [the Numpy docs](https://numpy.org/devdocs/reference/generated/numpy.lib.format.html) for more information about the file format.
 
 ## Installation
 
