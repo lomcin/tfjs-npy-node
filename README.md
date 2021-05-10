@@ -33,17 +33,19 @@ import { npy, npz } from "tfjs-npy-node";
 // .npy files //
 ////////////////
 
-// Load a Tensor from a .npy file:
+// Load a Tensor from a `.npy` file:
 const tensor1: tf.Tensor = await npy.load("file.npy");
 
-// Parse a Tensor from an ArrayBuffer containing the bytes of a .npy file:
+// Parse a Tensor from an `ArrayBuffer`, `Buffer` or typed array (e.g.
+// `UInt8Array`) containing the bytes of a `.npy` file:
 const npyArrayBuffer: ArrayBuffer = getArrayBufferFromSomewhere();
 const tensor2: tf.Tensor = npy.parse(npyArrayBuffer);
 
-// Save a tensor to a .npy file:
+// Save a tensor to a `.npy` file:
 await npy.save("file2.npy", tensor2);
 
-// Serialize a tensor to an ArrayBuffer containing the bytes of the .npy file:
+// Serialize a tensor to an `ArrayBuffer` containing the bytes of the `.npy`
+// file:
 const npyArrayBuffer2: ArrayBuffer = await npy.serialize(tensor1);
 const npyArrayBuffer3: ArrayBuffer = npy.serializeSync(tensor2);
 
@@ -51,17 +53,19 @@ const npyArrayBuffer3: ArrayBuffer = npy.serializeSync(tensor2);
 // .npz files //
 ////////////////
 
-// Load a Tensor from a .npy file:
+// Load a Tensor from a `.npz` file:
 const tensors1: tf.Tensor[] = await npz.load("file.npz");
 
-// Parse a Tensor from an ArrayBuffer containing the bytes of a .npy file:
+// Parse a Tensor from an `ArrayBuffer`, `Buffer` or typed array (e.g.
+// `UInt8Array`) containing the bytes of a `.npz` file:
 const npzArrayBuffer: ArrayBuffer = getArrayBufferFromSomewhere();
 const tensors2: tf.Tensor[] = npz.parse(npyArrayBuffer);
 
-// Save a tensor to a .npy file:
+// Save a tensor to a `.npz` file:
 await npz.save("file2.npz", tensors2);
 
-// Serialize a tensor to an ArrayBuffer containing the bytes of the .npy file:
+// Serialize a tensor to an `ArrayBuffer` containing the bytes of the `.npy`
+// file:
 const npzArrayBuffer2: ArrayBuffer = await npz.serialize(tensors1);
 const npzArrayBuffer3: ArrayBuffer = npz.serializeSync(tensors2);
 ```

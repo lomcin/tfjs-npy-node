@@ -15,9 +15,8 @@ limitations under the License.
 // https://docs.scipy.org/doc/numpy/neps/npy-format.html
 
 import * as tf from "@tensorflow/tfjs-core";
-import type { TypedArray } from "@tensorflow/tfjs-core";
 import * as fs from "fs";
-import { assert, bufferToArrayBuffer } from "./utils";
+import { assert } from "./utils";
 
 const MAGIC_STRING: string = "\x93NUMPY" as const;
 
@@ -101,7 +100,7 @@ export async function save(filepath: string, tensor: tf.Tensor): Promise<void> {
   return fs.promises.writeFile(filepath, Buffer.from(buffer));
 }
 
-function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
+function doSerialize(tensor: tf.Tensor, data: tf.TypedArray): ArrayBuffer {
   // Generate header
   const descr = tfDtypeToNumpyDescr.get(tensor.dtype);
   assert(
@@ -156,20 +155,20 @@ export async function load(filepath: string): Promise<tf.Tensor> {
   );
   const contents = await fs.promises.readFile(filepath);
   try {
-    return parse(bufferToArrayBuffer(contents));
+    return parse(contents);
   } catch (err) {
     throw new Error(`Could not load ${filepath}: ` + (err as Error).message);
   }
 }
 
 /** Parses an ArrayBuffer containing a npy file. Returns a tensor. */
-export function parse(ab: ArrayBuffer): tf.Tensor {
-  assert(ab.byteLength > MAGIC_STRING.length);
-  const view = new DataView(ab);
+export function parse(buf: Buffer | ArrayBuffer | tf.TypedArray): tf.Tensor {
+  assert(buf.byteLength > MAGIC_STRING.length);
+  const view = getView(buf);
   let pos = 0;
 
   // First parse the magic string.
-  const magicStr = dataViewToAscii(new DataView(ab, pos, MAGIC_STRING.length));
+  const magicStr = dataViewToAscii(getView(buf, pos, MAGIC_STRING.length));
   if (magicStr !== MAGIC_STRING) {
     throw Error("Not a numpy file.");
   }
@@ -188,7 +187,7 @@ export function parse(ab: ArrayBuffer): tf.Tensor {
   // Parse the header.
   // Header is almost json, so we just manipulated it until it is.
   // Example: {'descr': '<f8', 'fortran_order': False, 'shape': (1, 2), }
-  const headerPy = dataViewToAscii(new DataView(ab, pos, headerLen));
+  const headerPy = dataViewToAscii(getView(buf, pos, headerLen));
   pos += headerLen;
   const bytesLeft = view.byteLength - pos;
   const headerJson = headerPy
@@ -223,9 +222,44 @@ export function parse(ab: ArrayBuffer): tf.Tensor {
   );
 
   // Finally parse the actual data.
-  const slice = ab.slice(pos, pos + size * bytesPerElement);
+  const slice = getSlice(buf, pos, pos + size * bytesPerElement);
   const typedArray = info.createArray(slice);
   return tf.tensor(typedArray, shape, info.dtype);
+}
+
+/**
+ * Get a view of the buffer. If specified, byte offset and byte lengths are in
+ * relative terms. If not specified, returns a view of the whole buffer.
+ */
+function getView(
+  buf: Buffer | ArrayBuffer | tf.TypedArray,
+  byteOffset?: number,
+  byteLength?: number,
+): DataView {
+  if (buf instanceof ArrayBuffer) {
+    return new DataView(buf, byteOffset, byteLength);
+  } else {
+    const offset = buf.byteOffset + (byteOffset ?? 0);
+    const length = byteLength ?? buf.byteLength;
+    return new DataView(buf.buffer, offset, length);
+  }
+}
+
+/**
+ * Get a slice of the buffer. Start and end positions are relative to the byte
+ * offset, if any.
+ */
+function getSlice(
+  buf: Buffer | ArrayBuffer | tf.TypedArray,
+  start: number,
+  end: number,
+): ArrayBuffer {
+  assert(start <= end);
+  if (buf instanceof ArrayBuffer) {
+    return buf.slice(start, end);
+  } else {
+    return buf.buffer.slice(buf.byteOffset + start, buf.byteOffset + end);
+  }
 }
 
 function numEls(shape: number[]): number {

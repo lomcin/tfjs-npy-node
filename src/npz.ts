@@ -49,13 +49,11 @@ export function load(filepath: string): tf.Tensor[] {
 }
 
 /** Parse the contents of an npz file. */
-export function parse(ab: ArrayBuffer): tf.Tensor[] {
-  return doParse(Buffer.from(ab));
+export function parse(buf: Buffer | ArrayBuffer | tf.TypedArray): tf.Tensor[] {
+  return doParse(buf instanceof Buffer ? buf : Buffer.from(buf));
 }
 
 function doParse(filenameOrData: string | Buffer): tf.Tensor[] {
   const zip = new AdmZip(filenameOrData);
-  return zip
-    .getEntries()
-    .map((entry) => npy.parse(bufferToArrayBuffer(entry.getData())));
+  return zip.getEntries().map((entry) => npy.parse(entry.getData()));
 }
