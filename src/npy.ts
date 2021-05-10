@@ -17,7 +17,7 @@ limitations under the License.
 import * as tf from "@tensorflow/tfjs-core";
 import type { TypedArray } from "@tensorflow/tfjs-core";
 import * as fs from "fs";
-import { assert, bufferToArrayBuffer } from "./utils";
+import { assert } from "./utils";
 
 const MAGIC_STRING: string = "\x93NUMPY" as const;
 
@@ -30,10 +30,10 @@ interface DescrInfo {
   /** Function for creating a typed array. */
   createArray: (buf: ArrayBuffer) => tf.TypedArray;
   /**
-   * Function for writing into a view. Undefined if serialization is not
+   * Function for writing into a Buffer. Undefined if serialization is not
    * supported.
    */
-  write?: (view: DataView, pos: number, byte: number) => void;
+  write?: (buf: Buffer, pos: number, byte: number) => void;
 }
 
 /**
@@ -51,7 +51,7 @@ const numpyDescrInfo: Readonly<Record<SupportedDescr, DescrInfo>> = {
     bytes: 4,
     dtype: "float32",
     createArray: (buf) => new Float32Array(buf),
-    write: (view, pos, byte) => view.setFloat32(pos, byte, true),
+    write: (buf, pos, byte) => buf.writeFloatLE(byte, pos),
   },
   "<i8": {
     bytes: 8,
@@ -62,19 +62,19 @@ const numpyDescrInfo: Readonly<Record<SupportedDescr, DescrInfo>> = {
     bytes: 4,
     dtype: "int32",
     createArray: (buf) => new Int32Array(buf),
-    write: (view, pos, byte) => view.setInt32(pos, byte, true),
+    write: (buf, pos, byte) => buf.writeInt32LE(byte, pos),
   },
   "|b1": {
     bytes: 1,
     dtype: "bool",
     createArray: (buf) => new Uint8Array(buf),
-    write: (view, pos, byte) => view.setUint8(pos, byte),
+    write: (buf, pos, byte) => buf.writeUInt8(byte, pos),
   },
   "|u1": {
     bytes: 1,
     dtype: "int32", // FIXME: should be uint8
     createArray: (buf) => new Uint8Array(buf),
-    write: (view, pos, byte) => view.setUint8(pos, byte),
+    write: (buf, pos, byte) => buf.writeUInt8(byte, pos),
   },
 };
 
@@ -85,12 +85,12 @@ const tfDtypeToNumpyDescr: ReadonlyMap<tf.DataType, SupportedDescr> = new Map([
 ]);
 
 /** Serializes a tensor into a npy file contents. */
-export async function serialize(tensor: tf.Tensor): Promise<ArrayBuffer> {
+export async function serialize(tensor: tf.Tensor): Promise<Buffer> {
   return doSerialize(tensor, await tensor.data());
 }
 
 /** Serializes a tensor into npy file contents synchronously. */
-export function serializeSync(tensor: tf.Tensor): ArrayBuffer {
+export function serializeSync(tensor: tf.Tensor): Buffer {
   return doSerialize(tensor, tensor.dataSync());
 }
 
@@ -98,10 +98,10 @@ export function serializeSync(tensor: tf.Tensor): ArrayBuffer {
 export async function save(filepath: string, tensor: tf.Tensor): Promise<void> {
   assert(filepath.endsWith(".npy"));
   const buffer = doSerialize(tensor, await tensor.data());
-  return fs.promises.writeFile(filepath, Buffer.from(buffer));
+  return fs.promises.writeFile(filepath, buffer);
 }
 
-function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
+function doSerialize(tensor: tf.Tensor, data: TypedArray): Buffer {
   // Generate header
   const descr = tfDtypeToNumpyDescr.get(tensor.dtype);
   assert(
@@ -112,8 +112,7 @@ function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
   const shapeStr = tensor.shape.join(",") + ",";
   let header = `{'descr': '${descr}', 'fortran_order': False, 'shape': (${shapeStr}), }`;
 
-  // Figure out how long the file is going to be so we can create the
-  // output ArrayBuffer.
+  // Figure out how long the file is going to be so we can create the Buffer.
   const unpaddedLength =
     MAGIC_STRING.length + versionStr.length + 2 + header.length;
   // Spaces to 16-bit align.
@@ -126,26 +125,25 @@ function doSerialize(tensor: tf.Tensor, data: TypedArray): ArrayBuffer {
   const dataLen = bytesPerElement * numEls(tensor.shape);
   const totalSize = unpaddedLength + padding.length + dataLen;
 
-  const ab = new ArrayBuffer(totalSize);
-  const view = new DataView(ab);
+  const buf = Buffer.alloc(totalSize);
   let pos = 0;
 
   // Write magic string and version.
-  pos = writeStrToDataView(view, MAGIC_STRING + versionStr, pos);
+  pos = writeStrToBuffer(buf, MAGIC_STRING + versionStr, pos);
 
   // Write header length and header.
-  view.setUint16(pos, header.length, true);
+  buf.writeUInt16LE(header.length, pos);
   pos += 2;
-  pos = writeStrToDataView(view, header, pos);
+  pos = writeStrToBuffer(buf, header, pos);
 
   // Write data
   const write = numpyDescrInfo[descr].write;
   assert(write !== undefined, `dtype ${tensor.dtype} not yet supported.`);
   for (let i = 0; i < data.length; i++) {
-    write(view, pos, data[i]);
+    write(buf, pos, data[i]);
     pos += bytesPerElement;
   }
-  return ab;
+  return buf;
 }
 
 /** Load a .npy file from disk. */
@@ -156,41 +154,41 @@ export async function load(filepath: string): Promise<tf.Tensor> {
   );
   const contents = await fs.promises.readFile(filepath);
   try {
-    return parse(bufferToArrayBuffer(contents));
+    return parse(contents);
   } catch (err) {
-    throw new Error(`Could not load ${filepath}: ` + (err as Error).message);
+    throw new Error(`Could not load ${filepath}\n` + (err as Error).stack);
   }
 }
 
-/** Parses an ArrayBuffer containing a npy file. Returns a tensor. */
-export function parse(ab: ArrayBuffer): tf.Tensor {
-  assert(ab.byteLength > MAGIC_STRING.length);
-  const view = new DataView(ab);
+/** Parses a Buffer containing a npy file. Returns a tensor. */
+export function parse(buf: Buffer): tf.Tensor {
+  assert(buf.byteLength > MAGIC_STRING.length);
   let pos = 0;
 
   // First parse the magic string.
-  const magicStr = dataViewToAscii(new DataView(ab, pos, MAGIC_STRING.length));
+  const magicStr = readAscii(buf, pos, MAGIC_STRING.length);
+  assert(magicStr.length === MAGIC_STRING.length);
   if (magicStr !== MAGIC_STRING) {
-    throw Error("Not a numpy file.");
+    throw Error("Not a numpy file; magic string was read as: " + magicStr);
   }
   pos += MAGIC_STRING.length;
 
   // Parse the version
-  const version = [view.getUint8(pos++), view.getUint8(pos++)].join(".");
+  const version = [buf.readUInt8(pos++), buf.readUInt8(pos++)].join(".");
   if (version !== "1.0") {
     throw Error(`Unsupported npy version ${version}.`);
   }
 
   // Parse the header length.
-  const headerLen = view.getUint16(pos, true);
+  const headerLen = buf.readUInt16LE(pos);
   pos += 2;
 
   // Parse the header.
   // Header is almost json, so we just manipulated it until it is.
   // Example: {'descr': '<f8', 'fortran_order': False, 'shape': (1, 2), }
-  const headerPy = dataViewToAscii(new DataView(ab, pos, headerLen));
+  const headerPy = readAscii(buf, pos, headerLen);
   pos += headerLen;
-  const bytesLeft = view.byteLength - pos;
+  const bytesLeft = buf.byteLength - pos;
   const headerJson = headerPy
     .replace("True", "true")
     .replace("False", "false")
@@ -223,7 +221,10 @@ export function parse(ab: ArrayBuffer): tf.Tensor {
   );
 
   // Finally parse the actual data.
-  const slice = ab.slice(pos, pos + size * bytesPerElement);
+  const slice = buf.buffer.slice(
+    buf.byteOffset + pos,
+    buf.byteOffset + pos + size * bytesPerElement,
+  );
   const typedArray = info.createArray(slice);
   return tf.tensor(typedArray, shape, info.dtype);
 }
@@ -232,9 +233,9 @@ function numEls(shape: number[]): number {
   return shape.reduce((a: number, b: number) => a * b, 1);
 }
 
-function writeStrToDataView(view: DataView, str: string, pos: number) {
+function writeStrToBuffer(buf: Buffer, str: string, pos: number) {
   for (let i = 0; i < str.length; i++) {
-    view.setInt8(pos + i, str.charCodeAt(i));
+    buf.writeUInt8(str.charCodeAt(i), pos + i);
   }
   return pos + str.length;
 }
@@ -246,10 +247,10 @@ function assertEqual(actual: number, expected: number) {
   );
 }
 
-function dataViewToAscii(dv: DataView): string {
+function readAscii(buf: Buffer, start: number, length: number): string {
   let out = "";
-  for (let i = 0; i < dv.byteLength; i++) {
-    const val = dv.getUint8(i);
+  for (let i = start; i < start + length; i++) {
+    const val = buf.readUInt8(i);
     if (val === 0) {
       break;
     }

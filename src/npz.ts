@@ -2,21 +2,21 @@ import * as tf from "@tensorflow/tfjs-core";
 import * as AdmZip from "adm-zip";
 import { promisify } from "util";
 import * as npy from "./npy";
-import { assert, bufferToArrayBuffer } from "./utils";
+import { assert } from "./utils";
 
 /** Serializes multiple tensors into npz file contents. */
-export async function serialize(tensors: tf.Tensor[]): Promise<ArrayBuffer> {
+export async function serialize(tensors: tf.Tensor[]): Promise<Buffer> {
   const zip = new AdmZip();
   for (let i = 0; i < tensors.length; ++i) {
     const buffer = await npy.serialize(tensors[i]);
     zip.addFile(`arr_${i}`, Buffer.from(buffer));
   }
-  return bufferToArrayBuffer(zip.toBuffer());
+  return zip.toBuffer();
 }
 
 /** Serializes multiple tensors into npz file contents, synchronously. */
-export function serializeSync(tensors: tf.Tensor[]): ArrayBuffer {
-  return bufferToArrayBuffer(doSerialize(tensors).toBuffer());
+export function serializeSync(tensors: tf.Tensor[]): Buffer {
+  return doSerialize(tensors).toBuffer();
 }
 
 /** Save a .npz file to disk */
@@ -49,13 +49,11 @@ export function load(filepath: string): tf.Tensor[] {
 }
 
 /** Parse the contents of an npz file. */
-export function parse(ab: ArrayBuffer): tf.Tensor[] {
-  return doParse(Buffer.from(ab));
+export function parse(buf: Buffer): tf.Tensor[] {
+  return doParse(buf);
 }
 
 function doParse(filenameOrData: string | Buffer): tf.Tensor[] {
   const zip = new AdmZip(filenameOrData);
-  return zip
-    .getEntries()
-    .map((entry) => npy.parse(bufferToArrayBuffer(entry.getData())));
+  return zip.getEntries().map((entry) => npy.parse(entry.getData()));
 }
