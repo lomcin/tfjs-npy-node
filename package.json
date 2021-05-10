@@ -39,7 +39,10 @@
     "test:pkg": "pkg-ok",
     "clean": "rimraf dist",
     "preversion": "npm-run-all clean build test",
-    "postversion": "git push && git push --tags"
+    "postversion": "npm-run-all postversion:push postversion:push-tags postversion:create-release",
+    "postversion:push": "git push",
+    "postversion:push-tags": "git push --tags",
+    "postversion:create-release": "gh release create v$npm_package_version"
   },
   "dependencies": {
     "@tensorflow/tfjs-core": "^3.0.0",

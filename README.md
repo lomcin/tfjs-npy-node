@@ -83,3 +83,5 @@ $ npm run test
 ### Releasing a new version
 
 If you have write access to the main branch of the repo, use [`npm version`](https://docs.npmjs.com/cli/v7/commands/npm-version).
+
+The `package.json` defines some tasks that are automatically executed when bumping the package version. You will need to have the [GitHub CLI](https://cli.github.com/) installed if you want the automatic release creation to work.
