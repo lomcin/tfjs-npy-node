@@ -11,12 +11,12 @@ export async function serialize(tensors: tf.Tensor[]): Promise<ArrayBuffer> {
     const buffer = await npy.serialize(tensors[i]);
     zip.addFile(`arr_${i}`, Buffer.from(buffer));
   }
-  return zip.toBuffer().buffer;
+  return bufferToArrayBuffer(zip.toBuffer());
 }
 
 /** Serializes multiple tensors into npz file contents, synchronously. */
 export function serializeSync(tensors: tf.Tensor[]): ArrayBuffer {
-  return doSerialize(tensors).toBuffer().buffer;
+  return bufferToArrayBuffer(doSerialize(tensors).toBuffer());
 }
 
 /** Save a .npz file to disk */

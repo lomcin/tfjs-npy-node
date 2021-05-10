@@ -17,7 +17,7 @@ limitations under the License.
 import * as tf from "@tensorflow/tfjs-core";
 import type { TypedArray } from "@tensorflow/tfjs-core";
 import * as fs from "fs";
-import { assert } from "./utils";
+import { assert, bufferToArrayBuffer } from "./utils";
 
 const MAGIC_STRING: string = "\x93NUMPY" as const;
 
@@ -156,7 +156,7 @@ export async function load(filepath: string): Promise<tf.Tensor> {
   );
   const contents = await fs.promises.readFile(filepath);
   try {
-    return parse(contents.buffer);
+    return parse(bufferToArrayBuffer(contents));
   } catch (err) {
     throw new Error(`Could not load ${filepath}: ` + (err as Error).message);
   }

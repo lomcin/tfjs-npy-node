@@ -13,16 +13,13 @@ limitations under the License.
 
 import { assert } from "chai";
 import * as tf from "@tensorflow/tfjs-node";
+import * as path from "path";
 import { npy } from "../src";
-import { readFileSync } from "fs";
-import { bufferToArrayBuffer } from "../src/utils";
 const { expectArraysClose } = tf.test_util;
 
-describe("parse", () => {
+describe("npy.load", () => {
   async function load(fn: string): Promise<tf.Tensor> {
-    const b = readFileSync(__dirname + "/data/" + fn, null);
-    const ab = bufferToArrayBuffer(b);
-    return npy.parse(ab);
+    return npy.load(path.join(__dirname, "data", fn));
   }
 
   it("parses 1.npy correctly", async () => {
@@ -69,7 +66,7 @@ describe("parse", () => {
   });
 });
 
-describe("serialize", () => {
+describe("npy.serialize", () => {
   it("serializes to a parseable representation", async () => {
     const t = tf.tensor([1.5, 2.5]);
     const ab = await npy.serialize(t);

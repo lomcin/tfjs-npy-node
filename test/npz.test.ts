@@ -1,14 +1,11 @@
 import { assert } from "chai";
 import * as tf from "@tensorflow/tfjs-node";
+import * as path from "path";
 import { npz } from "../src";
-import { readFileSync } from "fs";
-import { bufferToArrayBuffer } from "../src/utils";
 
-describe("npz.parse", () => {
+describe("npz.load", () => {
   async function loadz(fn: string): Promise<tf.Tensor[]> {
-    const b = readFileSync(__dirname + "/data/" + fn, null);
-    const ab = bufferToArrayBuffer(b);
-    return npz.parse(ab);
+    return npz.load(path.join(__dirname, "data", fn));
   }
 
   it("parses 1.npz correctly", async () => {
