@@ -8,6 +8,7 @@ This is a fork of [tfjs-npy](https://github.com/propelml/tfjs-npy), which adds:
 - New synchronous APIs
 - `.npz` parsing and serialization
 - Loading and saving files from disk
+- Ability to parse from `Buffer` and typed arrays (e.g. `UInt8Array`), in addition to `ArrayBuffer`s
 
 Note that because of support for `.npz` (which uses zlib for zipping), and for loading and saving files, this library is meant to be used in Node.js, not in the browser. If you want to convert to npy in the browser, consider using the original [tfjs-npy](https://github.com/propelml/tfjs-npy).
 
