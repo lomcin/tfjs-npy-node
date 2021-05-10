@@ -75,15 +75,11 @@ Clone the repo, install dependencies, and run the tests:
 ```bash
 $ git clone git@github.com:MaximeKjaer/tfjs-npy-node.git
 $ cd tfjs-npy-node
-$ yarn
-$ yarn build
-$ yarn test
+$ npm install
+$ npm run build
+$ npm run test
 ```
 
 ### Releasing a new version
 
-If you have write access to the main branch of the repo, run:
-
-```bash
-$ yarn version
-```
+If you have write access to the main branch of the repo, use [`npm version`](https://docs.npmjs.com/cli/v7/commands/npm-version).
