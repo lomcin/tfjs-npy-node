@@ -118,6 +118,60 @@ describe("npy.parse", () => {
   });
 });
 
+describe("npy.parseToNpyData", () => {
+  async function load(filename: string): Promise<Buffer> {
+    return fs.promises.readFile(path.join(__dirname, "data", filename));
+  }
+
+  it("parses from an ArrayBuffer", async () => {
+    const buf = await load("1.npy");
+    const ab: ArrayBuffer = buf.buffer.slice(
+      buf.byteOffset,
+      buf.byteOffset + buf.byteLength,
+    );
+    const data = npy.parseToNpyData(ab);
+    assert.deepStrictEqual(data.data.BYTES_PER_ELEMENT, 4);
+    assert.deepStrictEqual(data.data.byteLength, 4 * 2);
+    assert.deepStrictEqual(data.shape, [2]);
+    assert.strictEqual(data.dtype, "float32");
+  });
+
+  it("parses from a Buffer", async () => {
+    const buf = await load("1.npy");
+    const data = npy.parseToNpyData(buf);
+    assert.deepStrictEqual(data.data.BYTES_PER_ELEMENT, 4);
+    assert.deepStrictEqual(data.data.byteLength, 4 * 2);
+    assert.deepStrictEqual(data.shape, [2]);
+    assert.strictEqual(data.dtype, "float32");
+  });
+
+  it("parses from a Uint8Array", async () => {
+    const buf = await load("1.npy");
+    const array = Uint8Array.from(buf);
+    const data = npy.parseToNpyData(array);
+    assert.deepStrictEqual(data.data.BYTES_PER_ELEMENT, 4);
+    assert.deepStrictEqual(data.data.byteLength, 4 * 2);
+    assert.deepStrictEqual(data.shape, [2]);
+    assert.strictEqual(data.dtype, "float32");
+  });
+
+  it("fails to read from a buffer with invalid data", async () => {
+    const buf = await load("1.npy");
+    // This will be an invalid input, because it contains:
+    //   0x00 0x00 0x00 0x93
+    //   0x00 0x00 0x00 'N'
+    //   0x00 0x00 0x00 'U'
+    //   0x00 0x00 0x00 'M'
+    //   0x00 0x00 0x00 'P'
+    //   0x00 0x00 0x00 'Y'
+    //   ...
+    // Instead of:
+    //   0x93 'N' 'U' 'M' 'P' 'Y'
+    const array = Float32Array.from(buf);
+    assert.throws(() => npy.parseToNpyData(array));
+  });
+});
+
 describe("npy.serialize", () => {
   it("serializes to a parseable representation", async () => {
     const t = tf.tensor([1.5, 2.5]);

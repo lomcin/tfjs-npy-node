@@ -163,6 +163,20 @@ export async function load(filepath: string): Promise<tf.Tensor> {
 
 /** Parses an ArrayBuffer containing a npy file. Returns a tensor. */
 export function parse(buf: Buffer | ArrayBuffer | tf.TypedArray): tf.Tensor {
+  const { shape, dtype, data } = parseToNpyData(buf);
+  return tf.tensor(data, shape, dtype);
+}
+
+/** Represents the information contained in a npy file. */
+export interface NpyData {
+  shape: number[];
+  dtype: tf.DataType;
+  data: tf.TypedArray;
+}
+
+export function parseToNpyData(
+  buf: Buffer | ArrayBuffer | tf.TypedArray,
+): NpyData {
   assert(buf.byteLength > MAGIC_STRING.length);
   const view = getView(buf);
   let pos = 0;
@@ -223,8 +237,11 @@ export function parse(buf: Buffer | ArrayBuffer | tf.TypedArray): tf.Tensor {
 
   // Finally parse the actual data.
   const slice = getSlice(buf, pos, pos + size * bytesPerElement);
-  const typedArray = info.createArray(slice);
-  return tf.tensor(typedArray, shape, info.dtype);
+  return {
+    shape,
+    dtype: info.dtype,
+    data: info.createArray(slice),
+  };
 }
 
 /**

@@ -53,6 +53,13 @@ export function parse(buf: Buffer | ArrayBuffer | tf.TypedArray): tf.Tensor[] {
   return doParse(buf instanceof Buffer ? buf : Buffer.from(buf));
 }
 
+export function parseToNpzData(
+  buf: Buffer | ArrayBuffer | tf.TypedArray,
+): npy.NpyData[] {
+  const zip = new AdmZip(buf instanceof Buffer ? buf : Buffer.from(buf));
+  return zip.getEntries().map((entry) => npy.parseToNpyData(entry.getData()));
+}
+
 function doParse(filenameOrData: string | Buffer): tf.Tensor[] {
   const zip = new AdmZip(filenameOrData);
   return zip.getEntries().map((entry) => npy.parse(entry.getData()));

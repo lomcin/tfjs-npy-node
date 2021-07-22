@@ -60,6 +60,41 @@ describe("npz.parse", () => {
   });
 });
 
+describe("npz.parseToNpzData", () => {
+  async function load(filename: string): Promise<Buffer> {
+    return fs.promises.readFile(path.join(__dirname, "data", filename));
+  }
+
+  it("parses from an ArrayBuffer", async () => {
+    const buf = await load("1.npz");
+    const ab: ArrayBuffer = buf.buffer.slice(
+      buf.byteOffset,
+      buf.byteOffset + buf.byteLength,
+    );
+    const data = npz.parseToNpzData(ab);
+    assert.strictEqual(data.length, 2);
+    assert.deepStrictEqual(data[0].shape, [2]);
+    assert.deepStrictEqual(data[1].shape, [2]);
+  });
+
+  it("parses from a Buffer", async () => {
+    const buf = await load("1.npz");
+    const data = npz.parseToNpzData(buf);
+    assert.strictEqual(data.length, 2);
+    assert.deepStrictEqual(data[0].shape, [2]);
+    assert.deepStrictEqual(data[1].shape, [2]);
+  });
+
+  it("parses from a Uint8Array", async () => {
+    const buf = await load("1.npz");
+    const array = Uint8Array.from(buf);
+    const data = npz.parseToNpzData(array);
+    assert.strictEqual(data.length, 2);
+    assert.deepStrictEqual(data[0].shape, [2]);
+    assert.deepStrictEqual(data[1].shape, [2]);
+  });
+});
+
 describe("npz.serialize", () => {
   it("serializes to a parseable representation", async () => {
     const tensors = [tf.tensor([1.5, 2.5]), tf.tensor([3.5, 4.5])];
