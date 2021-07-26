@@ -18,18 +18,18 @@ const tensors = [
 ];
 
 function sizes() {
-  const baselineBytes = baseline.serializeArraySync(tensors).byteLength;
+  const jsonGzipBytes = baseline.serializeArraySync(tensors, true).byteLength;
+  const jsonBytes = baseline.serializeArraySync(tensors, false).byteLength;
   const npzBytes = npz.serializeSync(tensors).byteLength;
+
+  const printSize = (name: string, bytes: number) =>
+    console.log(chalk.cyan(name) + ": " + prettyBytes(bytes));
 
   console.log();
   console.log(chalk.bold("Serialization sizes:"));
-  console.log(
-    chalk.cyan("baseline.serializeArraySync: ".padEnd(29, " ")) +
-      prettyBytes(baselineBytes),
-  );
-  console.log(
-    chalk.cyan("npz.serializeSync: ".padEnd(29, " ")) + prettyBytes(npzBytes),
-  );
+  printSize("baseline.serializeArraySync compressed", jsonGzipBytes);
+  printSize("baseline.serializeArraySync uncompressed", jsonBytes);
+  printSize("npz.serializeSync", npzBytes);
   console.log();
 }
 
@@ -38,12 +38,20 @@ sizes();
 suite(
   "NPZ Serialization",
 
-  add("baseline.serializeArray", async () => {
-    await baseline.serializeArray(tensors);
+  add("baseline.serializeArray compressed", async () => {
+    await baseline.serializeArray(tensors, true);
   }),
 
-  add("baseline.serializeArraySync", () => {
-    baseline.serializeArraySync(tensors);
+  add("baseline.serializeArraySync compressed", () => {
+    baseline.serializeArraySync(tensors, true);
+  }),
+
+  add("baseline.serializeArray uncompressed", async () => {
+    await baseline.serializeArray(tensors, false);
+  }),
+
+  add("baseline.serializeArraySync uncompressed", () => {
+    baseline.serializeArraySync(tensors, false);
   }),
 
   add("npz.serialize", async () => {

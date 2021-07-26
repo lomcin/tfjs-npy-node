@@ -7,30 +7,51 @@ export interface SerializedTensor {
   readonly data: number[];
 }
 
-export async function serialize(tensor: tf.Tensor): Promise<Buffer> {
-  return doSerialize(tensor, await tensor.data());
+export async function serialize(
+  tensor: tf.Tensor,
+  compress: boolean,
+): Promise<Buffer> {
+  return doSerialize(tensor, await tensor.data(), compress);
 }
 
-export async function serializeArray(tensors: tf.Tensor[]): Promise<Buffer> {
+export async function serializeArray(
+  tensors: tf.Tensor[],
+  compress: boolean,
+): Promise<Buffer> {
   return toBuffer(
     await Promise.all(tensors.map(async (t) => toJson(t, await t.data()))),
+    compress,
   );
 }
 
-export function serializeSync(tensor: tf.Tensor): Buffer {
-  return doSerialize(tensor, tensor.dataSync());
+export function serializeSync(tensor: tf.Tensor, compress: boolean): Buffer {
+  return doSerialize(tensor, tensor.dataSync(), compress);
 }
 
-export function serializeArraySync(tensors: tf.Tensor[]): Buffer {
-  return toBuffer(tensors.map((t) => toJson(t, t.dataSync())));
+export function serializeArraySync(
+  tensors: tf.Tensor[],
+  compress: boolean,
+): Buffer {
+  return toBuffer(
+    tensors.map((t) => toJson(t, t.dataSync())),
+    compress,
+  );
 }
 
-function doSerialize(tensor: tf.Tensor, data: tf.TypedArray): Buffer {
-  return toBuffer(toJson(tensor, data));
+function doSerialize(
+  tensor: tf.Tensor,
+  data: tf.TypedArray,
+  compress: boolean,
+): Buffer {
+  return toBuffer(toJson(tensor, data), compress);
 }
 
-function toBuffer(serialized: SerializedTensor | SerializedTensor[]): Buffer {
-  return gzipSync(JSON.stringify(serialized));
+function toBuffer(
+  serialized: SerializedTensor | SerializedTensor[],
+  compress: boolean,
+): Buffer {
+  const json = JSON.stringify(serialized);
+  return compress ? gzipSync(json) : Buffer.from(json);
 }
 
 function toJson(tensor: tf.Tensor, data: tf.TypedArray): SerializedTensor {

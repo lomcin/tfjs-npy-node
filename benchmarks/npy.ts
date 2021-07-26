@@ -11,18 +11,18 @@ const rng = seedrandom("");
 const tensor = tf.rand([100, 100], () => rng());
 
 function sizes() {
-  const baselineBytes = baseline.serializeSync(tensor).byteLength;
+  const jsonGzipBytes = baseline.serializeSync(tensor, true).byteLength;
+  const jsonBytes = baseline.serializeSync(tensor, false).byteLength;
   const npyBytes = npy.serializeSync(tensor).byteLength;
+
+  const printSize = (name: string, bytes: number) =>
+    console.log(chalk.cyan(name) + ": " + prettyBytes(bytes));
 
   console.log();
   console.log(chalk.bold("Serialization sizes:"));
-  console.log(
-    chalk.cyan("baseline.serializeSync: ".padEnd(24, " ")) +
-      prettyBytes(baselineBytes),
-  );
-  console.log(
-    chalk.cyan("npy.serializeSync: ".padEnd(24, " ")) + prettyBytes(npyBytes),
-  );
+  printSize("baseline.serializeSync compressed", jsonGzipBytes);
+  printSize("baseline.serializeSync uncompressed", jsonBytes);
+  printSize("npy.serializeSync", npyBytes);
   console.log();
 }
 
@@ -31,12 +31,20 @@ sizes();
 suite(
   "NPY Serialization",
 
-  add("baseline.serialize", async () => {
-    await baseline.serialize(tensor);
+  add("baseline.serialize compressed", async () => {
+    await baseline.serialize(tensor, true);
   }),
 
-  add("baseline.serializeSync", () => {
-    baseline.serializeSync(tensor);
+  add("baseline.serializeSync compressed", () => {
+    baseline.serializeSync(tensor, true);
+  }),
+
+  add("baseline.serialize uncompressed", async () => {
+    await baseline.serialize(tensor, false);
+  }),
+
+  add("baseline.serializeSync uncompressed", () => {
+    baseline.serializeSync(tensor, false);
   }),
 
   add("npy.serialize", async () => {
