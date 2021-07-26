@@ -24,7 +24,7 @@ export function printCompleteStats(summary: Summary): void {
 
     console.log("  " + chalk.cyan(benchmark.name + ":"));
     console.log(
-      `    Mean:   ${prettyMean}/op ± ${relativeMarginOfError}%  | ${relativePerf}`,
+      `    Mean:   ${prettyMean}/op ± ${relativeMarginOfError}% (${benchmark.samples} samples)  | ${relativePerf}`,
     );
     console.log(`    Median: ${prettyMedian}/op`);
     console.log();
