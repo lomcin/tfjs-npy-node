@@ -9,6 +9,7 @@
     "target": "es5",
     "lib": ["es2015", "dom"],
     "outDir": "./dist",
+    "rootDir": "./",
     "noUnusedLocals": true,
     "noImplicitReturns": true,
     "noUnusedParameters": false,
