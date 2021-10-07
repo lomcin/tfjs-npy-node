@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "install": "npm run build",
+    "postinstall": "npm run build",
     "fmt": "prettier --trailing-comma all --write *.ts",
     "lint": "tslint --project tsconfig.json",
     "test": "ts-node -r dotenv/config npy_test.ts"
