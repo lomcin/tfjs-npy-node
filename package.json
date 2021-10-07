@@ -11,7 +11,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "postinstall": "npm run build",
+    "postinstall": "npm install -D typescript && npm run build",
     "fmt": "prettier --trailing-comma all --write *.ts",
     "lint": "tslint --project tsconfig.json",
     "test": "ts-node -r dotenv/config npy_test.ts"
